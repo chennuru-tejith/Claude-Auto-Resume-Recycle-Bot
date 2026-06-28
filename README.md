@@ -58,3 +58,9 @@ Download the latest release zip package from the repository:
 *   **100% Local-First**: Your conversation backups, prompt histories, and settings are saved securely in `chrome.storage.local`.
 *   **Zero Telemetry**: No tracking, analytics scripts, or third-party servers. All data stays on your machine.
 *   **Secure API Fetching**: Uses standard native browser credentials (cookies) in the active tab context. No API keys are required.
+
+---
+
+## 📄 License
+
+This extension is open-source software licensed under the **MIT License**. Check out the [LICENSE](LICENSE) file for details regarding permission, warranty, and copyright.
