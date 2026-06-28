@@ -1,102 +1,60 @@
-<p align="center">
-  <img src="assets/banner.png" alt="ChatQueue AI Banner" width="100%">
-</p>
+# 🛡️ Claude Safeguard & Auto-Resume: Claude Recycle Bin & Chat Recovery Extension
 
-<h1 align="center">⏱ ChatQueue AI</h1>
+[![GitHub license](https://img.shields.io/github/license/chennuru-tejith/Claude-Chat-Resume-Bot?style=for-the-badge&color=7c3aed)](https://github.com/chennuru-tejith/Claude-Chat-Resume-Bot/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/chennuru-tejith/Claude-Chat-Resume-Bot?style=for-the-badge&color=10b981)](https://github.com/chennuru-tejith/Claude-Chat-Resume-Bot/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/chennuru-tejith/Claude-Chat-Resume-Bot?style=for-the-badge&color=3b82f6)](https://github.com/chennuru-tejith/Claude-Chat-Resume-Bot/issues)
+[![Platform](https://img.shields.io/badge/Platform-Chrome%20%7C%20Edge%20%7C%20Brave%20%7C%20Opera-violet?style=for-the-badge)](#)
 
-<p align="center">
-  <strong>An elegant, local-first browser extension that queues your prompts, auto-saves drafts, monitors rate limits, and automatically resumes your conversations the moment your AI Agent is ready.</strong>
-</p>
+> **Recover deleted Claude chats, auto-backup conversations, and auto-submit prompts when rate limits reset! The ultimate local-first browser extension providing a native Recycle Bin, Chat History Backup, and Auto-Resume Queue for Claude, ChatGPT, Gemini, and DeepSeek.**
 
-<p align="center">
-  <a href="https://github.com/chennuru-tejith/Chat-Queue-AI/blob/main/LICENSE"><img src="https://img.shields.io/github/license/chennuru-tejith/Chat-Queue-AI?style=for-the-badge&color=7c3aed" alt="License"></a>
-  <a href="https://github.com/chennuru-tejith/Chat-Queue-AI/stargazers"><img src="https://img.shields.io/github/stars/chennuru-tejith/Chat-Queue-AI?style=for-the-badge&color=10b981" alt="Stars"></a>
-  <a href="https://github.com/chennuru-tejith/Chat-Queue-AI/issues"><img src="https://img.shields.io/github/issues/chennuru-tejith/Chat-Queue-AI?style=for-the-badge&color=3b82f6" alt="Issues"></a>
-  <img src="https://img.shields.io/badge/Platform-Chrome%20%7C%20Edge%20%7C%20Brave%20%7C%20Opera-violet?style=for-the-badge" alt="Platforms">
-</p>
+---
+
+## 🔍 Why You Need This Extension
+
+### 1. Claude Deleted Chat Recovery (The Missing Recycle Bin)
+Anthropic's Claude AI does not provide a backup, restore, or trash bin utility. If you click **Delete chat** by mistake, your conversation is **permanently lost** from their servers. 
+**Claude Safeguard** solves this by running a secure, automated background sync that caches your chat threads locally. It injects a native **Recycled Chats** section directly into Claude's sidebar so you can preview, download, or restore deleted chats with a single click.
+
+### 2. Auto-Resume Queue (Bypass Rate Limits)
+Tired of hitting "You've reached your usage limit" and waiting around? Claude Safeguard monitors rate limit warnings on Claude, ChatGPT, Gemini, and DeepSeek, reads the reset timers (e.g. *try again after 3:15 PM* or *in 45 minutes*), counts down, and **automatically sends your prompt** the second your limit is cleared.
 
 ---
 
 ## ⚡️ Key Features
 
-*   🔄 **Smart Rate-Limit Auto-Resume**: Automatically monitors for usage limit banners (supporting Claude, ChatGPT, Gemini, and DeepSeek), sleeps during limits, and types + sends your prompt the second the AI agent becomes available.
-*   📝 **Gmail-like Drafts Auto-Saving**: Never lose a prompt! Automatically auto-saves your prompt draft, chat URL, interval, and resets on every keystroke. Changes are synced in real-time between the popup and the in-page panel.
-*   🔌 **Active AI Composer Sync**: Automatically grabs whatever query you typed into the AI's native composer when the extension loads. Clicking the **🔄 Sync AI Input** button instantly fetches the latest text from the active AI input box.
-*   📚 **Interactive Prompt History**: A persistent log of recently sent prompts. Click any previous prompt in the Settings panel to instantly reload the draft and queue configuration.
-*   🎛 **Maximalistic Control Panel**: Toggle preferences on the fly—enable/disable Sound Chimes, toggle Floating Action Badges on chat pages in real-time, or clear parameters with one click.
-*   📊 **Native Composer Progress Bar**: Sleek Session (5h) and Weekly (7d) usage bars injected directly below Claude's input box (with dynamic API querying).
-*   🕒 **Absolute Reset Time Parsing**: Reads absolute limit times (e.g. `until 4:30 AM` or `in 15 minutes`) and calculates dynamic countdown timers automatically.
-*   🔏 **Local-First & Private**: Direct browser-to-API communication using your active session. No telemetry, tracking, or external servers.
-*   💡 **Prompt Template Library**: Instant-access preset chips ("Continue coding", "Debug error", etc.) + custom template save slot.
-*   💬 **Live Conversation Stats**: View messages count and total estimated tokens inside a beautiful floating badge.
-*   🔔 **Sound Chime & Desktop Notifications**: Soft harmonic arpeggios play and chrome notifications trigger when your prompt successfully sends.
-*   ⌨️ **Quick Keyboard Shortcuts**: Toggle panel (`Alt+Shift+R`) and start/stop ChatQueue AI (`Alt+Shift+S`) instantly.
+### 🗑️ Claude Recycle Bin & Deleted Chat Recovery
+*   **Sidebar Accordion Folder**: Injects a collapsible **Recycled Chats** panel natively inside Claude's sidebar layout. Fully matches the official brown-grey theme.
+*   **Background API Sync Caching**: Periodically scans and backs up all your active sidebar conversation histories to local storage via secure, client-side REST requests. No manual actions required!
+*   **Instant Pre-Fetching on Delete**: When you click the initial "Delete" option on any chat, the extension pre-fetches the conversation history in the background before you click "Confirm", ensuring a 100% complete backup.
+*   **In-Page Dialogue Previews**: Click any recycled chat in the sidebar to open a premium dark overlay modal directly on the page to read your messages.
+*   **Native Restore & Copy**: Click the restore icon (`📥`) to copy the conversation history to the clipboard and open a new chat to resume work instantly.
+*   **Markdown Export**: Download any recycled chat as a clean `.md` markdown file.
+
+### 🔄 Rate-Limit Auto-Resume & Submit Queue
+*   **Universal AI Support**: Works seamlessly on **Claude**, **ChatGPT**, **Gemini**, and **DeepSeek**.
+*   **Adaptive Countdown Parsing**: Reads absolute reset times from page banners and calculates retry intervals.
+*   **Context-Aware Limit Checking**: Smart logic checks composer placeholders/attributes for rate limit indicators while ignoring temporarily disabled text boxes during active AI generation.
+*   **TTS Voice & Audio Alerts**: Plays gentle chimes or speaks voice notifications once your prompt is successfully queued and sent.
 
 ---
 
-## 📸 visual Tour
+## 🚀 Installation Guide
 
-<p align="center">
-  <img src="assets/chatqueue_logo.png" alt="ChatQueue AI Logo" width="200" style="border-radius: 24px; box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);">
-</p>
+### Step 1: Download the Extension
+Download the latest release zip package from the repository:
+- **[Download Claude Safeguard ZIP Package](claude-safeguard-autoresume.zip)**
 
-- **Setup Panel**: Standard glassmorphism configuration card for entering Chat URLs, editing prompts, and applying templates.
-- **Settings Dashboard**: Access preferences (Sound alerts, FAB toggle, Auto-capture toggle) and scroll through your past **Prompt History** log list.
-- **Status Dashboard**: Live monitoring feedback showing active wait times, count down tickers, and retry attempts.
-- **Log Terminal**: Real-time terminal reporting on limit detections, status changes, and prompt submission results.
-
----
-
-## 🚀 Quick Start
-
-### 1. Install locally (Developer Mode)
-1.  [📥 Download the Pre-packaged ZIP](https://github.com/chennuru-tejith/Chat-Queue-AI/raw/main/chatqueue-ai.zip) and extract it (or clone this repository) to your local machine.
-2.  Open Chrome (or Brave, Edge, Opera) and navigate to `chrome://extensions`.
-3.  Toggle the **Developer mode** switch in the top-right corner.
-4.  Click **Load unpacked** in the top-left and select the extracted folder (where `manifest.json` is located).
-
-### 2. How to Use
-1.  Open the AI chat page you want to automate (e.g., [claude.ai](https://claude.ai), [chatgpt.com](https://chatgpt.com), [gemini.google.com](https://gemini.google.com), or [chat.deepseek.com](https://chat.deepseek.com)).
-2.  Click the violet **ChatQueue AI** clock icon in the top-right header (or the floating action button fallback in the bottom-right).
-3.  Configure your settings:
-    *   **Chat URL**: Click **Use current** to lock in your active conversation.
-    *   **Resume Prompt**: Write what the agent should receive when it wakes up (or click one of our preset chips).
-    *   **Resets In**: Auto-detected from the page limit banner or utilization statistics!
-4.  Click **▶ Start ChatQueue AI**.
-5.  Sit back! You can safely focus on other tabs, and the extension will automatically type, submit, notification-chime, and refocus the chat when the limit resets.
+### Step 2: Install in Google Chrome / Brave / Edge
+1.  Extract the downloaded ZIP package to a folder on your computer.
+2.  Open your browser and navigate to the extensions page (e.g., `chrome://extensions/` for Chrome or `brave://extensions/` for Brave).
+3.  Enable **Developer mode** (toggle in the top-right corner).
+4.  Click **Load unpacked** in the top-left corner.
+5.  Select the folder containing the extracted extension files.
 
 ---
 
-## 🛠 Repository Structure
+## 🔒 Privacy & Security
 
-```text
-├── manifest.json       # Extension metadata & permissions
-├── background.js       # Background service worker (alarms, tabs, limits)
-├── content.js          # In-page UI, limit checkers, API fetchers
-├── icons/              # Extension logo icons (16x16, 48x48, 128x128)
-├── assets/             # Marketing banner and visual assets
-├── popup/              # Toolbar popup UI (html, js, css)
-├── LICENSE             # Project license
-└── README.md           # Documentation
-```
-
----
-
-## 🗺 Roadmap & Upcoming Features
-
-- [ ] **Multi-Prompt Queueing**: Chain multiple prompts in sequence to execute one after the other as limits reset.
-- [ ] **Custom Notification Soundboards**: Choose from a list of chime styles or upload custom `.mp3` alerts.
-- [ ] **Advanced Scheduling**: Delay prompt queues to send at specific calendar times.
-- [ ] **Syncing across Devices**: Option to backup templates and settings to Chrome Cloud Storage.
-
----
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/chennuru-tejith/Chat-Queue-AI/issues).
-
-If you find this project helpful, please give it a ⭐️ on GitHub! It helps more developers discover the tool.
-
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
+*   **100% Local-First**: Your conversation backups, prompt histories, and settings are saved securely in `chrome.storage.local`.
+*   **Zero Telemetry**: No tracking, analytics scripts, or third-party servers. All data stays on your machine.
+*   **Secure API Fetching**: Uses standard native browser credentials (cookies) in the active tab context. No API keys are required.
