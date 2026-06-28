@@ -957,28 +957,39 @@ function updateLocalChatCache(force = false) {
   } catch {}
 }
 
-function recycleChat(uuid) {
+async function recycleChat(uuid) {
   if (!uuid) return;
   try {
-    safeGet(["chatCache", "recycleBin"], d => {
+    safeGet(["chatCache", "recycleBin"], async d => {
       const cache = d?.chatCache || {};
       const bin = d?.recycleBin || [];
       
-      const chat = cache[uuid];
-      if (chat) {
-        if (!bin.some(c => c.uuid === uuid)) {
-          bin.unshift({
-            ...chat,
-            deletedAt: Date.now()
-          });
-          if (bin.length > 50) bin.pop();
-        }
-        delete cache[uuid];
-        safeSet({ chatCache: cache, recycleBin: bin }, () => {
-          showToast("✓ Chat moved to Recycle Bin!");
-          renderSidebarTrashList();
-        });
+      let chat = cache[uuid];
+      if (!chat) {
+        chat = await fetchClaudeChatFromApi(uuid);
       }
+      
+      if (!chat) {
+        chat = {
+          uuid,
+          title: "Recycled Chat",
+          messages: [{ role: "human", text: "(Conversation history could not be retrieved before deletion)" }],
+          lastUpdated: Date.now()
+        };
+      }
+      
+      if (!bin.some(c => c.uuid === uuid)) {
+        bin.unshift({
+          ...chat,
+          deletedAt: Date.now()
+        });
+        if (bin.length > 50) bin.pop();
+      }
+      delete cache[uuid];
+      safeSet({ chatCache: cache, recycleBin: bin }, () => {
+        showToast("✓ Chat moved to Recycle Bin!");
+        renderSidebarTrashList();
+      });
     });
   } catch {}
 }
@@ -1353,26 +1364,20 @@ function setupRecycleBinListeners() {
             const uuid = lastInteractedUuid || getCurrentChatUuid();
             if (uuid) {
               updateLocalChatCache(true);
-              fetchClaudeChatFromApi(uuid).then(chatData => {
-                if (chatData) {
-                  safeGet("chatCache", curr => {
-                    const cache = curr?.chatCache || {};
-                    cache[uuid] = chatData;
-                    safeSet({ chatCache: cache });
-                  });
-                }
-              });
-            }
-          }
-          if (text === "delete" || text === "delete chat" || text === "confirm") {
-            const uuid = lastInteractedUuid || getCurrentChatUuid();
-            if (uuid) {
-              recycleChat(uuid);
             }
           }
         }
       }
     }, { passive: true });
+    
+    // Catch deletion events directly from fetch network interceptions
+    window.addEventListener("message", event => {
+      if (event.source !== window) return;
+      if (event.data && event.data.type === 'CLAUDE_CHAT_DELETING') {
+        const chatId = event.data.chatId;
+        recycleChat(chatId);
+      }
+    });
     
     setTimeout(injectRecycleBinIntoSidebar, 1500);
     setTimeout(syncAllSidebarChats, 4000);
@@ -3401,9 +3406,42 @@ function handleUrlChange(url) {
   });
 }
 
+function injectFetchInterceptor() {
+  try {
+    const ex = document.getElementById('ar-fetch-interceptor');
+    if (ex) return; // Prevent double injection
+    
+    const script = document.createElement('script');
+    script.id = 'ar-fetch-interceptor';
+    script.textContent = `
+      (function() {
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+          const url = args[0];
+          const options = args[1];
+          if (typeof url === 'string' && url.includes('/api/organizations/') && url.includes('/chats/') && options && options.method === 'DELETE') {
+            const match = url.match(/\\/chats\\/([0-9a-fA-F-]+)/);
+            if (match) {
+              const chatId = match[1];
+              window.postMessage({ type: 'CLAUDE_CHAT_DELETING', chatId }, '*');
+              // Delay the actual delete request by 500ms to allow background pre-fetch to save history
+              await new Promise(r => setTimeout(r, 500));
+            }
+          }
+          return originalFetch.apply(this, args);
+        };
+      })();
+    `;
+    (document.head || document.documentElement).appendChild(script);
+  } catch (err) {
+    console.warn("Failed to inject fetch interceptor:", err);
+  }
+}
+
 // ── Boot ──────────────────────────────────────────────────────────────
 function boot() {
   injectStyles();
+  injectFetchInterceptor();
   setupRecycleBinListeners();
 
   // Start periodic check for button presence to handle SPA navigations reliably
