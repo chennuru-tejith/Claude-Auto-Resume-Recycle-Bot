@@ -53,9 +53,9 @@ function safeGet(key, cb) {
   if (!isCtxValid()) return;
   try { chrome.storage.local.get(key, cb); } catch { selfDestruct(); }
 }
-function safeSet(obj) {
+function safeSet(obj, cb) {
   if (!isCtxValid()) return;
-  try { chrome.storage.local.set(obj); } catch {}
+  try { chrome.storage.local.set(obj, cb); } catch {}
 }
 function selfDestruct() {
   try { mutObs.disconnect(); } catch {}
