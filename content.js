@@ -1261,6 +1261,186 @@ function renderSidebarTrashList() {
   } catch {}
 }
 
+function extractArtifactsFromMessages(messages) {
+  const artifacts = [];
+  if (!messages) return artifacts;
+  
+  for (const m of messages) {
+    if (!m.text) continue;
+    
+    const regex = /<antArtifact\s+([^>]*?)>([\s\S]*?)<\/antArtifact>/g;
+    let match;
+    while ((match = regex.exec(m.text)) !== null) {
+      const attrsStr = match[1];
+      const content = match[2];
+      
+      const idMatch = attrsStr.match(/identifier=["']([^"']*)["']/);
+      const titleMatch = attrsStr.match(/title=["']([^"']*)["']/);
+      const typeMatch = attrsStr.match(/type=["']([^"']*)["']/);
+      
+      const identifier = idMatch ? idMatch[1] : "artifact";
+      const title = titleMatch ? titleMatch[1] : "Untitled Document";
+      const type = typeMatch ? typeMatch[1] : "text/plain";
+      
+      artifacts.push({
+        identifier,
+        title,
+        type,
+        content: content.trim()
+      });
+    }
+  }
+  return artifacts;
+}
+
+function exportToWord(chat) {
+  try {
+    const artifacts = extractArtifactsFromMessages(chat.messages);
+    let wordArtifactsHtml = "";
+    if (artifacts.length > 0) {
+      wordArtifactsHtml = `
+        <h2 style="color: #c026d3; border-bottom: 2px solid #f5d0fe; padding-bottom: 5px; margin-top: 20px;">📎 Recycled Artifacts & Documents (${artifacts.length})</h2>
+      ` + artifacts.map(art => `
+        <div style="border: 1px dashed #d1d5db; background: #f9fafb; padding: 12px; margin-bottom: 12px; border-radius: 6px;">
+          <div style="font-weight: bold; font-size: 13px; color: #111827;">📄 ${escHtml(art.title)}</div>
+          <div style="font-size: 11px; color: #c026d3; font-family: monospace; margin-bottom: 8px;">Type: ${escHtml(art.type)}</div>
+          <pre style="background: #f3f4f6; padding: 10px; border: 1px solid #e5e7eb; font-family: Courier New, Courier, monospace; font-size: 11px; white-space: pre-wrap; margin:0;">${escHtml(art.content)}</pre>
+        </div>
+      `).join("");
+    }
+
+    const header = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <title>${escHtml(chat.title)}</title>
+        <style>
+          body { font-family: 'Segoe UI', Arial, sans-serif; color: #1f2937; line-height: 1.6; padding: 20px; }
+          h1 { color: #111827; font-size: 22px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 5px; }
+          .meta { font-size: 11px; color: #6b7280; margin-bottom: 20px; }
+          .msg { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: #f9fafb; }
+          .msg-human { border-left: 5px solid #d946ef; background: #fdf4ff; }
+          .msg-assistant { border-left: 5px solid #3b82f6; background: #eff6ff; }
+          .label { font-weight: bold; text-transform: uppercase; font-size: 10px; margin-bottom: 4px; }
+          .label-human { color: #c026d3; }
+          .label-assistant { color: #2563eb; }
+          .text { font-size: 13px; white-space: pre-wrap; }
+        </style>
+      </head>
+      <body>
+        <h1>🗑️ Recycled Chat: ${escHtml(chat.title)}</h1>
+        <div class="meta">UUID: ${chat.uuid} | Recycled At: ${new Date().toLocaleString()}</div>
+        ${wordArtifactsHtml}
+        <h2 style="color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; margin-top: 25px;">💬 Conversation History</h2>
+    `;
+    
+    const body = chat.messages.map(m => {
+      const isHuman = m.role === "human";
+      const typeClass = isHuman ? "msg-human" : "msg-assistant";
+      const labelClass = isHuman ? "label-human" : "label-assistant";
+      const label = isHuman ? "Human" : "Assistant";
+      return `
+        <div class="msg ${typeClass}">
+          <div class="label ${labelClass}">${label}</div>
+          <div class="text">${escHtml(m.text)}</div>
+        </div>
+      `;
+    }).join("");
+    
+    const footer = "</body></html>";
+    
+    const fullHtml = header + body + footer;
+    const blob = new Blob([fullHtml], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${chat.title.replace(/[^a-zA-Z0-9]/g, "_")}.doc`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("✓ Downloaded Word Document!");
+  } catch (err) {
+    showToast("❌ Failed to export Word document");
+  }
+}
+
+function exportToPdf(chat) {
+  try {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("⚠ Please allow popups to export PDF");
+      return;
+    }
+    
+    const artifacts = extractArtifactsFromMessages(chat.messages);
+    let pdfArtifactsHtml = "";
+    if (artifacts.length > 0) {
+      pdfArtifactsHtml = `
+        <div style="margin-bottom: 30px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #fdf4ff; page-break-inside: avoid;">
+          <h2 style="color: #c026d3; font-size: 15px; margin-top: 0; border-bottom: 1px solid #f5d0fe; padding-bottom: 8px; margin-bottom: 15px;">📎 Recycled Artifacts & Documents (${artifacts.length})</h2>
+      ` + artifacts.map(art => `
+        <div style="border: 1px dashed #d1d5db; background: #f9fafb; padding: 12px; margin-bottom: 12px; border-radius: 6px; page-break-inside: avoid;">
+          <div style="font-weight: 700; font-size: 13px; color: #1f2937;">📄 ${escHtml(art.title)}</div>
+          <div style="font-size: 10px; color: #c026d3; font-family: monospace; margin-bottom: 8px;">Type: ${escHtml(art.type)}</div>
+          <pre style="background: #f3f4f6; padding: 8px; border: 1px solid #e5e7eb; font-family: monospace; font-size: 11px; white-space: pre-wrap; margin:0; overflow:hidden;">${escHtml(art.content)}</pre>
+        </div>
+      `).join("") + `</div>`;
+    }
+
+    const messagesHtml = chat.messages.map(m => {
+      const isHuman = m.role === "human";
+      const border = isHuman ? "#d946ef" : "#3b82f6";
+      const bg = isHuman ? "#fdf4ff" : "#f9fafb";
+      const color = isHuman ? "#c026d3" : "#2563eb";
+      const label = isHuman ? "Human" : "Assistant";
+      return `
+        <div style="background: ${bg}; border: 1px solid #e5e7eb; border-left: 5px solid ${border}; border-radius: 8px; padding: 15px; margin-bottom: 15px; page-break-inside: avoid;">
+          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: ${color}; margin-bottom: 6px;">${label}</div>
+          <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.5; color: #1f2937;">${escHtml(m.text)}</div>
+        </div>
+      `;
+    }).join("");
+    
+    printWindow.document.write(`
+      <html>
+      <head>
+        <title>PDF Export - ${escHtml(chat.title)}</title>
+        <style>
+          body { font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #1f2937; max-width: 800px; margin: 0 auto; }
+          h1 { color: #111827; font-size: 24px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 5px; }
+          .meta { font-size: 12px; color: #6b7280; margin-bottom: 30px; }
+          @media print {
+            body { padding: 0; }
+            button { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; border-bottom: 2px solid #e5e7eb; padding-bottom:10px;">
+          <h1 style="margin:0;">🛡️ Claude Safeguard Conversation</h1>
+          <button onclick="window.print()" style="background:#d946ef; color:#fff; border:none; border-radius:6px; padding: 8px 16px; font-weight:600; cursor:pointer; font-size:13px; outline:none;">🖨 Print / Save as PDF</button>
+        </div>
+        <div class="meta">Title: ${escHtml(chat.title)} | ID: ${chat.uuid} | Exported: ${new Date().toLocaleString()}</div>
+        ${pdfArtifactsHtml}
+        <h2 style="color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; margin-top: 30px; margin-bottom: 20px;">💬 Conversation History</h2>
+        <div>
+          ${messagesHtml}
+        </div>
+        <script>
+          window.onload = () => {
+            setTimeout(() => {
+              window.print();
+            }, 300);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    showToast("✓ Opened PDF print view!");
+  } catch (err) {
+    showToast("❌ Failed to export PDF");
+  }
+}
+
 function openSidebarPreviewModal(chat) {
   try {
     document.getElementById("cl-preview-modal")?.remove();
@@ -1281,6 +1461,35 @@ function openSidebarPreviewModal(chat) {
     modal.style.padding = "20px";
     modal.style.fontFamily = "system-ui, -apple-system, sans-serif";
     
+    // Parse any embedded artifacts
+    const artifacts = extractArtifactsFromMessages(chat.messages);
+    let artifactsHtml = "";
+    if (artifacts.length > 0) {
+      const cards = artifacts.map((art, idx) => {
+        return `
+          <div style="background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.15); border-radius: 8px; padding: 12px; margin-bottom: 10px; display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="font-weight:600; font-size:13px; color:#e5e7eb; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:380px;">📄 ${escHtml(art.title)}</div>
+              <div style="font-size:10px; background:rgba(217, 70, 239, 0.15); color:#d946ef; padding: 2px 6px; border-radius:4px; font-family:monospace;">${escHtml(art.type)}</div>
+            </div>
+            <div style="display:flex; gap:8px; align-self: flex-end;">
+              <button class="cl-art-copy" data-idx="${idx}" style="background:transparent; border:1px solid rgba(255,255,255,0.15); color:#aaa; border-radius:4px; padding: 4px 8px; font-size:11px; cursor:pointer; font-weight:500; outline:none;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#aaa'">📋 Copy Code</button>
+              <button class="cl-art-dl" data-idx="${idx}" style="background:transparent; border:1px solid rgba(255,255,255,0.15); color:#aaa; border-radius:4px; padding: 4px 8px; font-size:11px; cursor:pointer; font-weight:500; outline:none;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#aaa'">📥 Download File</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+      
+      artifactsHtml = `
+        <div style="margin-bottom: 20px; border: 1px solid rgba(217, 70, 239, 0.25); background: rgba(217, 70, 239, 0.02); border-radius: 8px; padding: 16px; text-align:left;">
+          <div style="font-weight: 700; font-size: 11px; text-transform: uppercase; color: #d946ef; margin-bottom: 12px; display:flex; align-items:center; gap:6px; letter-spacing:0.5px;">
+            📎 Recycled Artifacts & Documents (${artifacts.length})
+          </div>
+          ${cards}
+        </div>
+      `;
+    }
+
     const messagesHtml = chat.messages.map(m => {
       const isHuman = m.role === "human";
       const bg = isHuman ? "rgba(217, 70, 239, 0.05)" : "rgba(255,255,255,0.02)";
@@ -1299,14 +1508,18 @@ function openSidebarPreviewModal(chat) {
       <div style="background: #191919; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; width: 100%; max-width: 600px; height: 80%; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.5); overflow:hidden;">
         <div style="display:flex; justify-content:space-between; align-items:center; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background:#191919;">
           <div style="font-weight: 600; font-size: 15px; color: #fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:450px;">🗑️ Recycled: ${escHtml(chat.title)}</div>
-          <button id="cl-modal-close" style="background:transparent; border:none; color:#888; font-size:18px; cursor:pointer; line-height:1;">✕</button>
+          <button id="cl-modal-close" style="background:transparent; border:none; color:#888; font-size:18px; cursor:pointer; line-height:1; outline:none;">✕</button>
         </div>
         <div style="flex:1; overflow-y:auto; padding: 20px; background:#111;">
+          ${artifactsHtml}
+          <div style="font-weight: 700; font-size: 11px; text-transform: uppercase; color: #888; margin-bottom: 12px; text-align:left; letter-spacing:0.5px;">💬 Conversation History</div>
           ${messagesHtml}
         </div>
-        <div style="display:flex; gap:12px; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); background:#191919;">
-          <button id="cl-modal-copy" style="flex:1; background:#d946ef; color:#fff; border:none; border-radius:8px; padding: 10px; font-weight:600; cursor:pointer; font-size:13px; transition:background 0.2s;" onmouseover="this.style.background='#c026d3'" onmouseout="this.style.background='#d946ef'">📋 Copy Full History</button>
-          <button id="cl-modal-download" style="flex:1; background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding: 10px; font-weight:600; cursor:pointer; font-size:13px; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">📥 Download .md</button>
+        <div style="display:flex; gap:8px; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); background:#191919;">
+          <button id="cl-modal-copy" style="flex:1.2; background:#d946ef; color:#fff; border:none; border-radius:8px; padding: 10px; font-weight:600; cursor:pointer; font-size:12px; transition:background 0.2s; outline:none;" onmouseover="this.style.background='#c026d3'" onmouseout="this.style.background='#d946ef'">📋 Copy MD</button>
+          <button id="cl-modal-word" style="flex:1; background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding: 10px; font-weight:600; cursor:pointer; font-size:12px; transition:background 0.2s; outline:none;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">📝 Word (.doc)</button>
+          <button id="cl-modal-pdf" style="flex:1; background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding: 10px; font-weight:600; cursor:pointer; font-size:12px; transition:background 0.2s; outline:none;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">📄 PDF</button>
+          <button id="cl-modal-download" style="flex:1; background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding: 10px; font-weight:600; cursor:pointer; font-size:12px; transition:background 0.2s; outline:none;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">📥 Markdown</button>
         </div>
       </div>
     `;
@@ -1334,6 +1547,44 @@ function openSidebarPreviewModal(chat) {
       URL.revokeObjectURL(url);
       showToast("✓ Downloaded markdown!");
     };
+    
+    modal.querySelector("#cl-modal-word").onclick = () => {
+      exportToWord(chat);
+    };
+    
+    modal.querySelector("#cl-modal-pdf").onclick = () => {
+      exportToPdf(chat);
+    };
+    
+    // Bind click events to individual artifact actions
+    modal.querySelectorAll(".cl-art-copy").forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.getAttribute("data-idx"));
+        const art = artifacts[idx];
+        if (art) {
+          navigator.clipboard.writeText(art.content).then(() => {
+            showToast("✓ Artifact content copied!");
+          });
+        }
+      };
+    });
+    
+    modal.querySelectorAll(".cl-art-dl").forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.getAttribute("data-idx"));
+        const art = artifacts[idx];
+        if (art) {
+          const blob = new Blob([art.content], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = art.identifier || "artifact.txt";
+          a.click();
+          URL.revokeObjectURL(url);
+          showToast("✓ Artifact downloaded!");
+        }
+      };
+    });
   } catch {}
 }
 
