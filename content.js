@@ -1402,7 +1402,7 @@ function exportToPdf(chat) {
     printWindow.document.write(`
       <html>
       <head>
-        <title>PDF Export - ${escHtml(chat.title)}</title>
+        <title>PDF Export - ${escHtml(chat.title || "Untitled Chat")}</title>
         <style>
           body { font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #1f2937; max-width: 800px; margin: 0 auto; }
           h1 { color: #111827; font-size: 24px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 5px; }
@@ -1416,26 +1416,39 @@ function exportToPdf(chat) {
       <body>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; border-bottom: 2px solid #e5e7eb; padding-bottom:10px;">
           <h1 style="margin:0;">🛡️ Claude Safeguard Conversation</h1>
-          <button onclick="window.print()" style="background:#d946ef; color:#fff; border:none; border-radius:6px; padding: 8px 16px; font-weight:600; cursor:pointer; font-size:13px; outline:none;">🖨 Print / Save as PDF</button>
+          <button id="cl-print-btn" style="background:#d946ef; color:#fff; border:none; border-radius:6px; padding: 8px 16px; font-weight:600; cursor:pointer; font-size:13px; outline:none;">🖨 Print / Save as PDF</button>
         </div>
-        <div class="meta">Title: ${escHtml(chat.title)} | ID: ${chat.uuid} | Exported: ${new Date().toLocaleString()}</div>
+        <div class="meta">Title: ${escHtml(chat.title || "Untitled Chat")} | ID: ${chat.uuid} | Exported: ${new Date().toLocaleString()}</div>
         ${pdfArtifactsHtml}
         <h2 style="color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; margin-top: 30px; margin-bottom: 20px;">💬 Conversation History</h2>
         <div>
           ${messagesHtml}
         </div>
-        <script>
-          window.onload = () => {
-            setTimeout(() => {
-              window.print();
-            }, 300);
-          };
-        </script>
       </body>
       </html>
     `);
+    
     printWindow.document.close();
+    
+    // Bind click listener directly from content script to bypass CSP inline listener blocks
+    const printBtn = printWindow.document.getElementById("cl-print-btn");
+    if (printBtn) {
+      printBtn.onclick = () => {
+        try { printWindow.print(); } catch {}
+      };
+    }
+    
     showToast("✓ Opened PDF print view!");
+    
+    // Auto-trigger print modal from content script context
+    setTimeout(() => {
+      try {
+        printWindow.focus();
+        printWindow.print();
+      } catch (err) {
+        console.warn("Auto-print call blocked, user must print manually:", err);
+      }
+    }, 500);
   } catch (err) {
     showToast("❌ Failed to export PDF");
   }
