@@ -12,6 +12,7 @@ document.querySelectorAll(".tab").forEach(tab => {
     if (tab.dataset.tab === "status") renderStatus();
     if (tab.dataset.tab === "analytics") renderAnalytics();
     if (tab.dataset.tab === "trash") renderTrash();
+    if (tab.dataset.tab === "archive") renderArchive();
     if (tab.dataset.tab === "settings") renderSettings();
   });
 });
@@ -482,6 +483,239 @@ function renderTrash() {
   });
 }
 
+let archiveChats = [];
+
+function renderArchive() {
+  chrome.storage.local.get(["chatCache", "recycleBin"], d => {
+    const cache = d.chatCache || {};
+    const bin = d.recycleBin || [];
+    const list = $("archiveChatList");
+    if (!list) return;
+
+    const activeChats = Object.keys(cache).map(uuid => ({
+      ...cache[uuid],
+      status: "Active"
+    }));
+
+    const deletedChats = bin.map(item => ({
+      ...item,
+      status: "Deleted"
+    }));
+
+    archiveChats = [...activeChats, ...deletedChats].sort((a, b) => {
+      const timeA = a.deletedAt || a.lastUpdated || 0;
+      const timeB = b.deletedAt || b.lastUpdated || 0;
+      return timeB - timeA;
+    });
+
+    filterAndRenderArchiveList();
+  });
+}
+
+function filterAndRenderArchiveList() {
+  const list = $("archiveChatList");
+  const query = $("archiveSearch")?.value.trim().toLowerCase() || "";
+  
+  const filtered = archiveChats.filter(chat => {
+    return (chat.title || "").toLowerCase().includes(query);
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state" style="padding: 24px 10px;">
+        <div class="empty-icon">📦</div>
+        <div class="empty-text">No conversations found.</div>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = filtered.map((chat, idx) => {
+    const time = chat.deletedAt || chat.lastUpdated || Date.now();
+    const date = new Date(time).toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const isDeleted = chat.status === "Deleted";
+    const statusColor = isDeleted ? "var(--red)" : "var(--green)";
+    const statusBg = isDeleted ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)";
+    const statusBorder = isDeleted ? "rgba(239, 68, 68, 0.2)" : "rgba(16, 185, 129, 0.2)";
+    const uid = chat.uuid;
+
+    return `
+      <div class="history-item" style="padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; align-items: stretch; margin-bottom: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-weight: 600; font-size: 11.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 170px;" title="${escHtml(chat.title)}">${escHtml(chat.title || "Untitled Chat")}</div>
+          <span style="font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 4px; color: ${statusColor}; background: ${statusBg}; border: 1px solid ${statusBorder};">${chat.status}</span>
+        </div>
+        <div style="font-size: 10px; color: var(--muted); display: flex; justify-content: space-between; align-items: center;">
+          <span>${chat.messages ? chat.messages.length : 0} messages • ${date}</span>
+          <div style="display: flex; gap: 4px;">
+            <button class="btn-ghost btn-arch-view" data-uid="${uid}" style="padding: 2px 4px; font-size: 9px; height: 18px; min-width: 28px;">👁</button>
+            <button class="btn-ghost btn-arch-md" data-uid="${uid}" style="padding: 2px 4px; font-size: 9px; height: 18px; min-width: 28px;" title="Markdown">MD</button>
+            <button class="btn-ghost btn-arch-doc" data-uid="${uid}" style="padding: 2px 4px; font-size: 9px; height: 18px; min-width: 28px;" title="Word">Doc</button>
+            <button class="btn-ghost btn-arch-pdf" data-uid="${uid}" style="padding: 2px 4px; font-size: 9px; height: 18px; min-width: 28px;" title="PDF">PDF</button>
+            <button class="btn-ghost btn-arch-json" data-uid="${uid}" style="padding: 2px 4px; font-size: 9px; height: 18px; min-width: 28px;" title="JSON">JSON</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // Bind View listener
+  list.querySelectorAll(".btn-arch-view").forEach(btn => {
+    btn.onclick = () => {
+      const uid = btn.dataset.uid;
+      const chat = archiveChats.find(c => c.uuid === uid);
+      if (chat) {
+        activePreviewChat = chat;
+        $("previewModalTitle").textContent = chat.title || "Untitled Chat";
+        renderPreviewMessages(chat.messages);
+        $("previewModal").style.display = "flex";
+      }
+    };
+  });
+
+  // Bind MD download listener
+  list.querySelectorAll(".btn-arch-md").forEach(btn => {
+    btn.onclick = () => {
+      const uid = btn.dataset.uid;
+      const chat = archiveChats.find(c => c.uuid === uid);
+      if (chat) {
+        const markdown = formatForExport(chat.messages, 'custom');
+        downloadFile(markdown, `${(chat.title || "Untitled").replace(/[^a-zA-Z0-9]/g, "_")}.md`, 'text/markdown');
+        toast("✓ Downloaded Markdown!");
+      }
+    };
+  });
+
+  // Bind Word document download listener
+  list.querySelectorAll(".btn-arch-doc").forEach(btn => {
+    btn.onclick = () => {
+      const uid = btn.dataset.uid;
+      const chat = archiveChats.find(c => c.uuid === uid);
+      if (chat) {
+        const docHtml = generateWordHtml(chat);
+        downloadFile(docHtml, `${(chat.title || "Untitled").replace(/[^a-zA-Z0-9]/g, "_")}.doc`, 'application/msword');
+        toast("✓ Downloaded Word Doc!");
+      }
+    };
+  });
+
+  // Bind PDF download listener
+  list.querySelectorAll(".btn-arch-pdf").forEach(btn => {
+    btn.onclick = () => {
+      const uid = btn.dataset.uid;
+      const chat = archiveChats.find(c => c.uuid === uid);
+      if (chat) {
+        chrome.storage.local.set({ printChatData: chat }, () => {
+          chrome.tabs.create({ url: chrome.runtime.getURL("popup/print.html") });
+        });
+      }
+    };
+  });
+
+  // Bind JSON download listener
+  list.querySelectorAll(".btn-arch-json").forEach(btn => {
+    btn.onclick = () => {
+      const uid = btn.dataset.uid;
+      const chat = archiveChats.find(c => c.uuid === uid);
+      if (chat) {
+        const json = JSON.stringify(chat, null, 2);
+        downloadFile(json, `${(chat.title || "Untitled").replace(/[^a-zA-Z0-9]/g, "_")}.json`, 'application/json');
+        toast("✓ Downloaded JSON!");
+      }
+    };
+  });
+}
+
+function generateWordHtml(chat) {
+  const artifacts = extractArtifactsFromMessages(chat.messages);
+  let wordArtifactsHtml = "";
+  if (artifacts.length > 0) {
+    wordArtifactsHtml = `
+      <h2 style="color: #c026d3; border-bottom: 2px solid #f5d0fe; padding-bottom: 5px; margin-top: 20px;">📎 Recycled Artifacts & Documents (${artifacts.length})</h2>
+    ` + artifacts.map(art => `
+      <div style="border: 1px dashed #d1d5db; background: #f9fafb; padding: 12px; margin-bottom: 12px; border-radius: 6px;">
+        <div style="font-weight: bold; font-size: 13px; color: #111827;">📄 ${escHtml(art.title)}</div>
+        <div style="font-size: 11px; color: #c026d3; font-family: monospace; margin-bottom: 8px;">Type: ${escHtml(art.type)}</div>
+        <pre style="background: #f3f4f6; padding: 10px; border: 1px solid #e5e7eb; font-family: Courier New, Courier, monospace; font-size: 11px; white-space: pre-wrap; margin:0;">${escHtml(art.content)}</pre>
+      </div>
+    `).join("");
+  }
+
+  const header = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <title>${escHtml(chat.title || "Conversation")}</title>
+      <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; color: #1f2937; line-height: 1.6; padding: 20px; }
+        h1 { color: #111827; font-size: 22px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 5px; }
+        .meta { font-size: 11px; color: #6b7280; margin-bottom: 20px; }
+        .msg { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: #f9fafb; }
+        .msg-human { border-left: 5px solid #d946ef; background: #fdf4ff; }
+        .msg-assistant { border-left: 5px solid #3b82f6; background: #eff6ff; }
+        .label { font-weight: bold; text-transform: uppercase; font-size: 10px; margin-bottom: 4px; }
+        .label-human { color: #c026d3; }
+        .label-assistant { color: #2563eb; }
+        .text { font-size: 13px; white-space: pre-wrap; }
+      </style>
+    </head>
+    <body>
+      <h1>💬 Claude Chat Archive: ${escHtml(chat.title || "Untitled Chat")}</h1>
+      <div class="meta">UUID: ${chat.uuid} | Exported At: ${new Date().toLocaleString()}</div>
+      ${wordArtifactsHtml}
+      <h2 style="color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; margin-top: 25px;">💬 Conversation History</h2>
+  `;
+  
+  const body = chat.messages.map(m => {
+    const isHuman = m.role === "human";
+    const typeClass = isHuman ? "msg-human" : "msg-assistant";
+    const labelClass = isHuman ? "label-human" : "label-assistant";
+    const label = isHuman ? "Human" : "Assistant";
+    return `
+      <div class="msg ${typeClass}">
+        <div class="label ${labelClass}">${label}</div>
+        <div class="text">${escHtml(m.text)}</div>
+      </div>
+    `;
+  }).join("");
+  
+  const footer = "</body></html>";
+  return header + body + footer;
+}
+
+function downloadFile(content, filename, contentType) {
+  const blob = new Blob([content], { type: contentType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function extractArtifactsFromMessages(messages) {
+  const artifacts = [];
+  if (!messages) return artifacts;
+  for (const m of messages) {
+    if (!m.text) continue;
+    const regex = /<antArtifact\s+([^>]*?)>([\s\S]*?)<\/antArtifact>/g;
+    let match;
+    while ((match = regex.exec(m.text)) !== null) {
+      const attrsStr = match[1];
+      const content = match[2];
+      const idMatch = attrsStr.match(/identifier=["']([^"']*)["']/);
+      const titleMatch = attrsStr.match(/title=["']([^"']*)["']/);
+      const typeMatch = attrsStr.match(/type=["']([^"']*)["']/);
+      artifacts.push({
+        identifier: idMatch ? idMatch[1] : "artifact",
+        title: titleMatch ? titleMatch[1] : "Untitled Document",
+        type: typeMatch ? typeMatch[1] : "text/plain",
+        content: content.trim()
+      });
+    }
+  }
+  return artifacts;
+}
+
 function renderPreviewMessages(messages) {
   const container = $("previewModalBody");
   if (!container) return;
@@ -945,6 +1179,7 @@ setInterval(() => {
   if (activeTab?.dataset.tab === "status") renderStatus();
   if (activeTab?.dataset.tab === "analytics") renderAnalytics();
   if (activeTab?.dataset.tab === "trash") renderTrash();
+  if (activeTab?.dataset.tab === "archive") renderArchive();
   if (activeTab?.dataset.tab === "settings") renderSettings();
   updateUI();
 }, 4000);
@@ -1115,3 +1350,41 @@ $("btnDownloadPreview").addEventListener("click", () => {
     toast("✓ Markdown file downloaded!");
   }
 });
+
+$("btnWordPreview").addEventListener("click", () => {
+  if (activePreviewChat) {
+    const docHtml = generateWordHtml(activePreviewChat);
+    downloadFile(docHtml, `${(activePreviewChat.title || "Untitled").replace(/[^a-zA-Z0-9]/g, "_")}.doc`, 'application/msword');
+    toast("✓ Downloaded Word Doc!");
+  }
+});
+
+$("btnPdfPreview").addEventListener("click", () => {
+  if (activePreviewChat) {
+    chrome.storage.local.set({ printChatData: activePreviewChat }, () => {
+      chrome.tabs.create({ url: chrome.runtime.getURL("popup/print.html") });
+    });
+  }
+});
+
+// Archive search and global backup triggers
+const archiveSearchInput = $("archiveSearch");
+if (archiveSearchInput) {
+  archiveSearchInput.addEventListener("input", filterAndRenderArchiveList);
+}
+
+const btnExportAllJson = $("btnExportAllJson");
+if (btnExportAllJson) {
+  btnExportAllJson.addEventListener("click", () => {
+    chrome.storage.local.get(["chatCache", "recycleBin"], d => {
+      const backup = {
+        exportedAt: Date.now(),
+        chatCache: d.chatCache || {},
+        recycleBin: d.recycleBin || []
+      };
+      const json = JSON.stringify(backup, null, 2);
+      downloadFile(json, `claude_backup_archive_${Date.now()}.json`, 'application/json');
+      toast("✓ Exported all conversations!");
+    });
+  });
+}

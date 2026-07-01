@@ -759,6 +759,7 @@
   <div class="tab" data-tab="status">Queues</div>
   <div class="tab" data-tab="analytics">Analytics</div>
   <div class="tab" data-tab="trash">Recycle Bin</div>
+  <div class="tab" data-tab="archive">Backup Hub</div>
   <div class="tab" data-tab="settings">Settings</div>
 </div>
 
@@ -949,6 +950,23 @@
     <button class="btn-ghost" id="btnClearHistory" style="width: 100%; text-align: center; padding: 8px; font-size: 11px;">🗑 Clear History & Settings</button>
   </div>
 </div>
+
+<!-- ── ARCHIVE TAB ──────────────────────────────────────────────── -->
+<div class="panel" id="tab-archive">
+  <div class="field">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+      <label style="margin: 0;">Backup Archive</label>
+      <button class="btn-ghost" id="btnExportAllJson" style="font-size: 10px; padding: 2px 6px; height: auto;">📥 Export All (.json)</button>
+    </div>
+    <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+      <input type="text" id="archiveSearch" placeholder="Search chats..." style="flex: 1; height: 26px; font-size: 11px; padding: 0 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface); color: #fff;" />
+    </div>
+    <div id="archiveChatList" style="max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px;">
+      <!-- Active and recycled chats will be listed here -->
+    </div>
+  </div>
+</div>
+
 <!-- Preview Modal -->
 <div id="previewModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 1000; padding: 20px; flex-direction: column;">
   <div style="background: var(--surface-solid); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; flex: 1; display: flex; flex-direction: column; min-height: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
@@ -959,9 +977,11 @@
     <div id="previewModalBody" style="flex: 1; overflow-y: auto; font-size: 11.5px; line-height: 1.5; color: #e5e7eb; padding-right: 4px; font-family: var(--font-body);">
       <!-- Messages rendered dynamically -->
     </div>
-    <div style="display: flex; gap: 8px; margin-top: 12px; flex-shrink: 0; border-top: 1px solid var(--border); padding-top: 10px;">
-      <button class="btn-primary" id="btnCopyPreview" style="margin-top: 0; font-size: 11.5px; padding: 6px 12px; flex: 1;">📋 Copy Full History</button>
-      <button class="btn-ghost" id="btnDownloadPreview" style="font-size: 11.5px; padding: 6px 12px; flex: 1;">📥 Download .md</button>
+    <div style="display: flex; gap: 6px; margin-top: 12px; flex-shrink: 0; border-top: 1px solid var(--border); padding-top: 10px;">
+      <button class="btn-primary" id="btnCopyPreview" style="margin-top: 0; font-size: 11px; padding: 6px 8px; flex: 1.2;">📋 Copy MD</button>
+      <button class="btn-ghost" id="btnWordPreview" style="font-size: 11px; padding: 6px 8px; flex: 1;">📝 Word</button>
+      <button class="btn-ghost" id="btnPdfPreview" style="font-size: 11px; padding: 6px 8px; flex: 1;">📄 PDF</button>
+      <button class="btn-ghost" id="btnDownloadPreview" style="font-size: 11px; padding: 6px 8px; flex: 1;">📥 MD</button>
     </div>
   </div>
 </div>
