@@ -492,15 +492,19 @@ function renderArchive() {
     const list = $("archiveChatList");
     if (!list) return;
 
-    const activeChats = Object.keys(cache).map(uuid => ({
-      ...cache[uuid],
-      status: "Active"
-    }));
+    const activeChats = Object.keys(cache)
+      .filter(uuid => cache[uuid])
+      .map(uuid => ({
+        ...cache[uuid],
+        status: "Active"
+      }));
 
-    const deletedChats = bin.map(item => ({
-      ...item,
-      status: "Deleted"
-    }));
+    const deletedChats = bin
+      .filter(item => item)
+      .map(item => ({
+        ...item,
+        status: "Deleted"
+      }));
 
     archiveChats = [...activeChats, ...deletedChats].sort((a, b) => {
       const timeA = a.deletedAt || a.lastUpdated || 0;
@@ -627,7 +631,8 @@ function filterAndRenderArchiveList() {
 }
 
 function generateWordHtml(chat) {
-  const artifacts = extractArtifactsFromMessages(chat.messages);
+  const messages = chat.messages || [];
+  const artifacts = extractArtifactsFromMessages(messages);
   let wordArtifactsHtml = "";
   if (artifacts.length > 0) {
     wordArtifactsHtml = `
@@ -665,7 +670,7 @@ function generateWordHtml(chat) {
       <h2 style="color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; margin-top: 25px;">💬 Conversation History</h2>
   `;
   
-  const body = chat.messages.map(m => {
+  const body = messages.map(m => {
     const isHuman = m.role === "human";
     const typeClass = isHuman ? "msg-human" : "msg-assistant";
     const labelClass = isHuman ? "label-human" : "label-assistant";
@@ -673,7 +678,7 @@ function generateWordHtml(chat) {
     return `
       <div class="msg ${typeClass}">
         <div class="label ${labelClass}">${label}</div>
-        <div class="text">${escHtml(m.text)}</div>
+        <div class="text">${escHtml(m.text || "")}</div>
       </div>
     `;
   }).join("");

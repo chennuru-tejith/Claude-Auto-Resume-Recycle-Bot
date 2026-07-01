@@ -1295,7 +1295,8 @@ function extractArtifactsFromMessages(messages) {
 
 function exportToWord(chat) {
   try {
-    const artifacts = extractArtifactsFromMessages(chat.messages);
+    const messages = chat.messages || [];
+    const artifacts = extractArtifactsFromMessages(messages);
     let wordArtifactsHtml = "";
     if (artifacts.length > 0) {
       wordArtifactsHtml = `
@@ -1312,7 +1313,7 @@ function exportToWord(chat) {
     const header = `
       <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
       <head>
-        <title>${escHtml(chat.title)}</title>
+        <title>${escHtml(chat.title || "Conversation")}</title>
         <style>
           body { font-family: 'Segoe UI', Arial, sans-serif; color: #1f2937; line-height: 1.6; padding: 20px; }
           h1 { color: #111827; font-size: 22px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 5px; }
@@ -1327,13 +1328,13 @@ function exportToWord(chat) {
         </style>
       </head>
       <body>
-        <h1>🗑️ Recycled Chat: ${escHtml(chat.title)}</h1>
+        <h1>🗑️ Recycled Chat: ${escHtml(chat.title || "Untitled Chat")}</h1>
         <div class="meta">UUID: ${chat.uuid} | Recycled At: ${new Date().toLocaleString()}</div>
         ${wordArtifactsHtml}
         <h2 style="color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; margin-top: 25px;">💬 Conversation History</h2>
     `;
     
-    const body = chat.messages.map(m => {
+    const body = messages.map(m => {
       const isHuman = m.role === "human";
       const typeClass = isHuman ? "msg-human" : "msg-assistant";
       const labelClass = isHuman ? "label-human" : "label-assistant";
@@ -1341,7 +1342,7 @@ function exportToWord(chat) {
       return `
         <div class="msg ${typeClass}">
           <div class="label ${labelClass}">${label}</div>
-          <div class="text">${escHtml(m.text)}</div>
+          <div class="text">${escHtml(m.text || "")}</div>
         </div>
       `;
     }).join("");
@@ -1353,7 +1354,7 @@ function exportToWord(chat) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${chat.title.replace(/[^a-zA-Z0-9]/g, "_")}.doc`;
+    a.download = `${(chat.title || "Untitled").replace(/[^a-zA-Z0-9]/g, "_")}.doc`;
     a.click();
     URL.revokeObjectURL(url);
     showToast("✓ Downloaded Word Document!");
@@ -1370,7 +1371,8 @@ function exportToPdf(chat) {
       return;
     }
     
-    const artifacts = extractArtifactsFromMessages(chat.messages);
+    const messages = chat.messages || [];
+    const artifacts = extractArtifactsFromMessages(messages);
     let pdfArtifactsHtml = "";
     if (artifacts.length > 0) {
       pdfArtifactsHtml = `
@@ -1385,7 +1387,7 @@ function exportToPdf(chat) {
       `).join("") + `</div>`;
     }
 
-    const messagesHtml = chat.messages.map(m => {
+    const messagesHtml = messages.map(m => {
       const isHuman = m.role === "human";
       const border = isHuman ? "#d946ef" : "#3b82f6";
       const bg = isHuman ? "#fdf4ff" : "#f9fafb";
@@ -1394,7 +1396,7 @@ function exportToPdf(chat) {
       return `
         <div style="background: ${bg}; border: 1px solid #e5e7eb; border-left: 5px solid ${border}; border-radius: 8px; padding: 15px; margin-bottom: 15px; page-break-inside: avoid;">
           <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: ${color}; margin-bottom: 6px;">${label}</div>
-          <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.5; color: #1f2937;">${escHtml(m.text)}</div>
+          <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.5; color: #1f2937;">${escHtml(m.text || "")}</div>
         </div>
       `;
     }).join("");
@@ -1475,7 +1477,8 @@ function openSidebarPreviewModal(chat) {
     modal.style.fontFamily = "system-ui, -apple-system, sans-serif";
     
     // Parse any embedded artifacts
-    const artifacts = extractArtifactsFromMessages(chat.messages);
+    const messages = chat.messages || [];
+    const artifacts = extractArtifactsFromMessages(messages);
     let artifactsHtml = "";
     if (artifacts.length > 0) {
       const cards = artifacts.map((art, idx) => {
@@ -1503,7 +1506,7 @@ function openSidebarPreviewModal(chat) {
       `;
     }
 
-    const messagesHtml = chat.messages.map(m => {
+    const messagesHtml = messages.map(m => {
       const isHuman = m.role === "human";
       const bg = isHuman ? "rgba(217, 70, 239, 0.05)" : "rgba(255,255,255,0.02)";
       const border = isHuman ? "rgba(217, 70, 239, 0.15)" : "rgba(255,255,255,0.08)";
@@ -1512,7 +1515,7 @@ function openSidebarPreviewModal(chat) {
       return `
         <div style="background: ${bg}; border: 1px solid ${border}; border-radius: 8px; padding: 12px; margin-bottom: 12px; text-align: left;">
           <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: ${color}; margin-bottom: 6px;">${label}</div>
-          <div style="white-space: pre-wrap; font-size: 13px; line-height: 1.5; color: #f3f4f6;">${escHtml(m.text)}</div>
+          <div style="white-space: pre-wrap; font-size: 13px; line-height: 1.5; color: #f3f4f6;">${escHtml(m.text || "")}</div>
         </div>
       `;
     }).join("");
@@ -1520,7 +1523,7 @@ function openSidebarPreviewModal(chat) {
     modal.innerHTML = `
       <div style="background: #191919; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; width: 100%; max-width: 600px; height: 80%; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.5); overflow:hidden;">
         <div style="display:flex; justify-content:space-between; align-items:center; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background:#191919;">
-          <div style="font-weight: 600; font-size: 15px; color: #fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:450px;">🗑️ Recycled: ${escHtml(chat.title)}</div>
+          <div style="font-weight: 600; font-size: 15px; color: #fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:450px;">🗑️ Recycled: ${escHtml(chat.title || "Untitled Chat")}</div>
           <button id="cl-modal-close" style="background:transparent; border:none; color:#888; font-size:18px; cursor:pointer; line-height:1; outline:none;">✕</button>
         </div>
         <div style="flex:1; overflow-y:auto; padding: 20px; background:#111;">
