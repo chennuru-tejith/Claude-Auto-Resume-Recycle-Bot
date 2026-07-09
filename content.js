@@ -595,6 +595,8 @@ function isLimitActive() {
 
 function canSend(ignoreLimit = false) {
   try {
+    if (isAiResponding()) return false;
+    
     const input = getInput();
     if (!input) return false;
     if (input.tagName === "TEXTAREA" || input.tagName === "INPUT") {
