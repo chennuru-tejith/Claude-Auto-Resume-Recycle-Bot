@@ -403,9 +403,29 @@ function formatForExport(messages, targetAI) {
 }
 
 // ── Render Recycle Bin tab ────────────────────────────────────────────
+function cleanRecycleBinRetention(bin) {
+  if (!Array.isArray(bin)) return [];
+  const now = Date.now();
+  const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+  let cleanBin = bin.filter(item => {
+    const deletedAt = item.deletedAt || now;
+    return (now - deletedAt) < thirtyDaysMs;
+  });
+  if (cleanBin.length > 200) {
+    cleanBin = cleanBin.slice(0, 200);
+  }
+  return cleanBin;
+}
+
 function renderTrash() {
   chrome.storage.local.get("recycleBin", d => {
-    const bin = d.recycleBin || [];
+    let bin = d.recycleBin || [];
+    const cleaned = cleanRecycleBinRetention(bin);
+    if (cleaned.length !== bin.length) {
+      bin = cleaned;
+      chrome.storage.local.set({ recycleBin: cleaned });
+    }
+
     const list = $("trashList");
     if (!list) return;
 
@@ -419,8 +439,14 @@ function renderTrash() {
       return;
     }
 
+    const now = Date.now();
     list.innerHTML = bin.map((item, idx) => {
-      const date = new Date(item.deletedAt || Date.now()).toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      const deletedAt = item.deletedAt || now;
+      const msRemaining = (30 * 24 * 60 * 60 * 1000) - (now - deletedAt);
+      const daysRemaining = Math.max(1, Math.ceil(msRemaining / (24 * 60 * 60 * 1000)));
+      const expiryText = `Expires in ${daysRemaining} day${daysRemaining > 1 ? "s" : ""}`;
+      const date = new Date(deletedAt).toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      
       return `
         <div class="history-item" style="padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; align-items: stretch; margin-bottom: 4px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -428,7 +454,7 @@ function renderTrash() {
             <span style="font-size: 8px; color: var(--muted);">${date}</span>
           </div>
           <div style="font-size: 10px; color: var(--muted); display: flex; justify-content: space-between; align-items: center;">
-            <span>${item.messages.length} messages</span>
+            <span>${item.messages.length} messages • <span style="color:var(--accent); font-weight:500;">${expiryText}</span></span>
             <div style="display: flex; gap: 6px;">
               <button class="btn-ghost btn-view-trash" data-idx="${idx}" style="padding: 2px 6px; font-size: 9px; height: 18px;">👁 View</button>
               <button class="btn-ghost btn-restore-trash" data-idx="${idx}" style="padding: 2px 6px; font-size: 9px; height: 18px; color: var(--accent);">📥 Restore</button>
@@ -536,8 +562,15 @@ function filterAndRenderArchiveList() {
 
   list.innerHTML = filtered.map((chat, idx) => {
     const time = chat.deletedAt || chat.lastUpdated || Date.now();
-    const date = new Date(time).toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     const isDeleted = chat.status === "Deleted";
+    
+    let dateLabel = new Date(time).toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    if (isDeleted) {
+      const msRemaining = (30 * 24 * 60 * 60 * 1000) - (Date.now() - time);
+      const daysRemaining = Math.max(1, Math.ceil(msRemaining / (24 * 60 * 60 * 1000)));
+      dateLabel = `${dateLabel} (${daysRemaining}d left)`;
+    }
+
     const statusColor = isDeleted ? "var(--red)" : "var(--green)";
     const statusBg = isDeleted ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)";
     const statusBorder = isDeleted ? "rgba(239, 68, 68, 0.2)" : "rgba(16, 185, 129, 0.2)";
@@ -550,7 +583,7 @@ function filterAndRenderArchiveList() {
           <span style="font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 4px; color: ${statusColor}; background: ${statusBg}; border: 1px solid ${statusBorder};">${chat.status}</span>
         </div>
         <div style="font-size: 10px; color: var(--muted); display: flex; justify-content: space-between; align-items: center;">
-          <span>${chat.messages ? chat.messages.length : 0} messages • ${date}</span>
+          <span>${chat.messages ? chat.messages.length : 0} messages • ${dateLabel}</span>
           <div style="display: flex; gap: 4px;">
             <button class="btn-ghost btn-arch-view" data-uid="${uid}" style="padding: 2px 4px; font-size: 9px; height: 18px; min-width: 28px;">👁</button>
             <button class="btn-ghost btn-arch-md" data-uid="${uid}" style="padding: 2px 4px; font-size: 9px; height: 18px; min-width: 28px;" title="Markdown">MD</button>

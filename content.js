@@ -959,6 +959,20 @@ function updateLocalChatCache(force = false) {
   } catch {}
 }
 
+function cleanRecycleBinRetention(bin) {
+  if (!Array.isArray(bin)) return [];
+  const now = Date.now();
+  const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+  let cleanBin = bin.filter(item => {
+    const deletedAt = item.deletedAt || now;
+    return (now - deletedAt) < thirtyDaysMs;
+  });
+  if (cleanBin.length > 200) {
+    cleanBin = cleanBin.slice(0, 200);
+  }
+  return cleanBin;
+}
+
 async function recycleChat(uuid) {
   if (!uuid) return;
   try {
@@ -985,10 +999,10 @@ async function recycleChat(uuid) {
           ...chat,
           deletedAt: Date.now()
         });
-        if (bin.length > 50) bin.pop();
       }
+      const cleanedBin = cleanRecycleBinRetention(bin);
       delete cache[uuid];
-      safeSet({ chatCache: cache, recycleBin: bin }, () => {
+      safeSet({ chatCache: cache, recycleBin: cleanedBin }, () => {
         showToast("✓ Chat moved to Recycle Bin!");
         renderSidebarTrashList();
       });
@@ -1188,7 +1202,13 @@ function renderSidebarTrashList() {
     if (!list) return;
     
     safeGet("recycleBin", d => {
-      const bin = d.recycleBin || [];
+      let bin = d.recycleBin || [];
+      const cleaned = cleanRecycleBinRetention(bin);
+      if (cleaned.length !== bin.length) {
+        bin = cleaned;
+        safeSet({ recycleBin: cleaned });
+      }
+
       const binJson = JSON.stringify(bin.map(b => ({ uuid: b.uuid, title: b.title, len: b.messages.length })));
       if (binJson === lastSidebarTrashListJson) return;
       lastSidebarTrashListJson = binJson;
@@ -1202,10 +1222,17 @@ function renderSidebarTrashList() {
         return;
       }
       
+      const now = Date.now();
       list.innerHTML = bin.map((item, idx) => {
+        const deletedAt = item.deletedAt || now;
+        const msRemaining = (30 * 24 * 60 * 60 * 1000) - (now - deletedAt);
+        const daysRemaining = Math.max(1, Math.ceil(msRemaining / (24 * 60 * 60 * 1000)));
+        const expiryLabel = `${daysRemaining}d left`;
+
         return `
           <div class="cl-trash-item" data-idx="${idx}" style="display:flex; align-items:center; justify-content:space-between; padding: 6px 12px; border-radius: 6px; cursor:pointer; font-size: 12.5px; color: rgba(255,255,255,0.8); transition: background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
             <span class="cl-trash-title" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:8px;" title="${escHtml(item.title)}">${escHtml(item.title)}</span>
+            <span style="font-size:9px; color:rgba(255,255,255,0.3); margin-right:6px; flex-shrink:0;">${expiryLabel}</span>
             <div style="display:flex; gap:6px; flex-shrink:0;">
               <button class="cl-trash-restore-btn" data-idx="${idx}" title="Restore Chat" style="background:transparent; border:none; padding:2px; cursor:pointer; font-size:10px; opacity:0.6; transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">📥</button>
               <button class="cl-trash-delete-btn" data-idx="${idx}" title="Delete Permanently" style="background:transparent; border:none; padding:2px; cursor:pointer; font-size:10px; opacity:0.6; transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">✕</button>
