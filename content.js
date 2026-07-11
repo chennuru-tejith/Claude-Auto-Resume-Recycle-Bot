@@ -1013,6 +1013,7 @@ async function recycleChat(uuid) {
 async function fetchClaudeChatFromApi(chatId) {
   try {
     const orgsResp = await fetch("https://claude.ai/api/organizations");
+    if (!orgsResp.ok) return null;
     const orgs = await orgsResp.json();
     const orgId = orgs[0]?.uuid;
     if (!orgId) return null;
@@ -3783,6 +3784,18 @@ function boot() {
   // Instant URL initialization
   lastCheckedUrl = location.href;
   handleUrlChange(lastCheckedUrl);
+
+  const onUrlChange = () => {
+    const currentUrl = location.href;
+    if (currentUrl !== lastCheckedUrl) {
+      lastCheckedUrl = currentUrl;
+      handleUrlChange(currentUrl);
+    }
+  };
+  if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+    window.addEventListener("popstate", onUrlChange);
+    window.addEventListener("hashchange", onUrlChange);
+  }
 }
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
 else boot();
