@@ -6,6 +6,8 @@ let usageFetchInterval = null;
 
 let fabEnabled = true;
 let autoCaptureEnabled = true;
+let autoCopyOnLimit = false;
+let limitCopyTriggered = false;
 
 function cleanUrlForComparison(urlStr) {
   try {
@@ -18,7 +20,7 @@ function cleanUrlForComparison(urlStr) {
 }
 
 try {
-  chrome.storage.local.get(["fabEnabled", "autoCaptureEnabled"], d => {
+  chrome.storage.local.get(["fabEnabled", "autoCaptureEnabled", "autoCopyOnLimit"], d => {
     if (d) {
       if (d.fabEnabled === false) {
         fabEnabled = false;
@@ -26,6 +28,9 @@ try {
       }
       if (d.autoCaptureEnabled === false) {
         autoCaptureEnabled = false;
+      }
+      if (d.autoCopyOnLimit === true) {
+        autoCopyOnLimit = true;
       }
     }
   });
@@ -151,6 +156,9 @@ try {
       }
       if (msg.key === "autoCaptureEnabled") {
         autoCaptureEnabled = msg.val;
+      }
+      if (msg.key === "autoCopyOnLimit") {
+        autoCopyOnLimit = msg.val;
       }
       return;
     }
@@ -3619,14 +3627,29 @@ const mutObs = new MutationObserver(() => {
     if (isLimitActive()) {
       const ri = getResetInfo();
       safeSend({ type: "LIMIT_DETECTED", resetMinutes: ri ? ri.mins : 0 });
+
+      if (!limitCopyTriggered) {
+        limitCopyTriggered = true;
+        if (autoCopyOnLimit) {
+          const msgs = scrapeConversation();
+          if (msgs.length > 0) {
+            const markdown = formatForExport(msgs, 'custom');
+            navigator.clipboard.writeText(markdown).then(() => {
+              showToast("✓ Limit hit! History copied to clipboard.");
+            }).catch(err => {
+              console.warn("Failed to auto-copy clipboard:", err);
+            });
+          }
+        }
+      }
+    } else {
+      limitCopyTriggered = false;
     }
     // Update local chat cache
     updateLocalChatCache();
     // Update native usage bar
     updateUsageBarOnPage();
   }, 900);
-
-
 });
 try { mutObs.observe(document.body, { childList: true, subtree: true }); } catch {}
 

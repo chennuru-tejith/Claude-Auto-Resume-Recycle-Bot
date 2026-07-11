@@ -1002,11 +1002,12 @@ function renderTemplates() {
 
 // ── Render settings panel ─────────────────────────────────────────────
 function renderSettings() {
-  chrome.storage.local.get(["soundPref", "ttsVoice", "theme", "fabEnabled", "autoCaptureEnabled", "promptHistory"], d => {
+  chrome.storage.local.get(["soundPref", "ttsVoice", "theme", "fabEnabled", "autoCaptureEnabled", "autoCopyOnLimit", "promptHistory"], d => {
     $("selSound").value = d.soundPref || "chime";
     $("selTheme").value = d.theme || "default";
     $("chkFab").checked = d.fabEnabled !== false;
     $("chkAutoCapture").checked = d.autoCaptureEnabled !== false;
+    $("chkAutoCopyOnLimit").checked = d.autoCopyOnLimit === true;
 
     // Show/hide TTS voice row
     const rowTts = $("rowTtsVoice");
@@ -1122,6 +1123,22 @@ $("prompt").addEventListener("input", () => {
   updatePromptStats();
   saveDraft();
 });
+
+// Variable chips click listener
+document.querySelectorAll("#variableChips .var-chip").forEach(btn => {
+  btn.onclick = () => {
+    const val = btn.dataset.var;
+    const txtArea = $("prompt");
+    const text = txtArea.value;
+    const start = txtArea.selectionStart || 0;
+    const end = txtArea.selectionEnd || 0;
+    txtArea.value = text.substring(0, start) + val + text.substring(end);
+    txtArea.selectionStart = txtArea.selectionEnd = start + val.length;
+    txtArea.focus();
+    updatePromptStats();
+    saveDraft();
+  };
+});
 $("chatUrl").addEventListener("input", () => {
   updatePlatformBadge();
   saveDraft();
@@ -1180,6 +1197,11 @@ $("chkAutoCapture").addEventListener("change", () => {
   toast("✓ Auto-capture " + ($("chkAutoCapture").checked ? "enabled" : "disabled"));
 });
 
+$("chkAutoCopyOnLimit").addEventListener("change", () => {
+  updateSetting("autoCopyOnLimit", $("chkAutoCopyOnLimit").checked);
+  toast("✓ Auto-copy on Limit " + ($("chkAutoCopyOnLimit").checked ? "enabled" : "disabled"));
+});
+
 $("btnClearHistory").addEventListener("click", () => {
   chrome.storage.local.set({
     promptHistory: [],
@@ -1187,11 +1209,13 @@ $("btnClearHistory").addEventListener("click", () => {
     ttsVoice: "",
     theme: "default",
     fabEnabled: true,
-    autoCaptureEnabled: true
+    autoCaptureEnabled: true,
+    autoCopyOnLimit: false
   }, () => {
     chrome.runtime.sendMessage({ type: "SET_SOUND_PREF", data: { soundPref: "chime" } });
     updateSetting("fabEnabled", true);
     updateSetting("autoCaptureEnabled", true);
+    updateSetting("autoCopyOnLimit", false);
     applyTheme("default");
     $("selSound").value = "chime";
     $("selTheme").value = "default";
