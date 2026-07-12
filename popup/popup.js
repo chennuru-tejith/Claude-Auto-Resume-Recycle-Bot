@@ -13,6 +13,7 @@ document.querySelectorAll(".tab").forEach(tab => {
     if (tab.dataset.tab === "analytics") renderAnalytics();
     if (tab.dataset.tab === "trash") renderTrash();
     if (tab.dataset.tab === "archive") renderArchive();
+    if (tab.dataset.tab === "scratchpad") renderScratchpad();
     if (tab.dataset.tab === "settings") renderSettings();
   });
 });
@@ -1064,8 +1065,40 @@ function renderSettings() {
   });
 }
 
+// ── Render Scratchpad panel ───────────────────────────────────────────
+function renderScratchpad() {
+  chrome.storage.local.get("scratchpadNotes", d => {
+    const text = d.scratchpadNotes || "";
+    $("scratchpadText").value = text;
+    updateScratchpadStats();
+  });
+}
+
+function updateScratchpadStats() {
+  const text = $("scratchpadText").value;
+  const chars = text.length;
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  $("scratchStats").textContent = `${chars} chars · ${words} words`;
+}
+
+// Debounced save for scratchpad notes
+let scratchSaveTimeout = null;
+function saveScratchpad() {
+  const text = $("scratchpadText").value;
+  clearTimeout(scratchSaveTimeout);
+  scratchSaveTimeout = setTimeout(() => {
+    chrome.storage.local.set({ scratchpadNotes: text }, () => {
+      const indicator = $("scratchSavedIndicator");
+      if (indicator) {
+        indicator.style.opacity = "1";
+        setTimeout(() => { indicator.style.opacity = "0"; }, 1500);
+      }
+    });
+  }, 400);
+}
+
 // ── Load saved settings on open ───────────────────────────────────────
-chrome.storage.local.get(["savedSettings", "autoCaptureEnabled", "soundPref", "theme"], ({ savedSettings, autoCaptureEnabled, soundPref, theme }) => {
+chrome.storage.local.get(["savedSettings", "autoCaptureEnabled", "soundPref", "theme", "scratchpadNotes"], ({ savedSettings, autoCaptureEnabled, soundPref, theme, scratchpadNotes }) => {
   if (savedSettings) {
     if (savedSettings.chatUrl)      $("chatUrl").value      = savedSettings.chatUrl;
     if (savedSettings.prompt)       $("prompt").value       = savedSettings.prompt;
@@ -1078,6 +1111,11 @@ chrome.storage.local.get(["savedSettings", "autoCaptureEnabled", "soundPref", "t
   $("selSound").value = soundPref || "chime";
   $("selTheme").value = theme || "default";
   applyTheme(theme || "default");
+
+  if (scratchpadNotes) {
+    $("scratchpadText").value = scratchpadNotes;
+    updateScratchpadStats();
+  }
   
   // If the prompt is still empty, auto-detect composer text
   if (autoCaptureEnabled !== false && !$("prompt").value.trim()) {
@@ -1450,3 +1488,45 @@ if (btnExportAllJson) {
     });
   });
 }
+
+// ── Scratchpad Listeners ──────────────────────────────────────────────
+$("scratchpadText").addEventListener("input", () => {
+  updateScratchpadStats();
+  saveScratchpad();
+});
+
+$("btnScratchCopyToClipboard").addEventListener("click", () => {
+  const val = $("scratchpadText").value;
+  if (!val.trim()) { toast("⚠ Scratchpad is empty"); return; }
+  navigator.clipboard.writeText(val).then(() => {
+    toast("✓ Copied notes to clipboard!");
+  });
+});
+
+$("btnScratchAppendToPrompt").addEventListener("click", () => {
+  const val = $("scratchpadText").value.trim();
+  if (!val) { toast("⚠ Scratchpad is empty"); return; }
+  
+  const currentPrompt = $("prompt").value;
+  $("prompt").value = currentPrompt ? (currentPrompt + "\n" + val) : val;
+  updatePromptStats();
+  saveDraft();
+  toast("✓ Appended notes to resume prompt!");
+});
+
+$("btnScratchExportTxt").addEventListener("click", () => {
+  const val = $("scratchpadText").value;
+  if (!val.trim()) { toast("⚠ Scratchpad is empty"); return; }
+  downloadFile(val, `scratchpad_notes_${Date.now()}.txt`, 'text/plain');
+  toast("✓ Exported notes as TXT!");
+});
+
+$("btnScratchClear").addEventListener("click", () => {
+  if (confirm("Clear all scratchpad notes?")) {
+    $("scratchpadText").value = "";
+    updateScratchpadStats();
+    chrome.storage.local.set({ scratchpadNotes: "" }, () => {
+      toast("🗑 Scratchpad cleared");
+    });
+  }
+});
