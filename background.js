@@ -1,4 +1,4 @@
-// Claude Safeguard — Background Service Worker v5
+// ChatQueue AI — Background Service Worker v5
 
 const ALARM = "ar-monitor";
 const MAX_ATTEMPTS = 120;
@@ -71,7 +71,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         chrome.notifications.create({
           type: "basic",
           iconUrl: "icons/icon48.png",
-          title: "Claude Safeguard ✓",
+          title: "ChatQueue AI ✓",
           message: "Your prompt was sent! The AI is responding."
         });
         sendResponse({ ok: true });
@@ -133,7 +133,7 @@ function startResume(data) {
     startedAt: Date.now(),
     limitDetectedAt: null,
     attempts: 0,
-    log: [`[${ts()}] Claude Safeguard started. Monitoring for usage limit...`]
+    log: [`[${ts()}] ChatQueue AI started. Monitoring for usage limit...`]
   };
 
   chrome.storage.local.get("queues", d => {
@@ -455,7 +455,7 @@ function attemptSend(state) {
                   chrome.notifications.create({
                     type: "basic",
                     iconUrl: "icons/icon48.png",
-                    title: "Claude Safeguard ✓",
+                    title: "ChatQueue AI ✓",
                     message: "Your prompt was sent! The AI is responding."
                   });
 
@@ -644,7 +644,7 @@ function updateBadge(queues) {
 }
 
 chrome.runtime.onConnect.addListener(port => {
-  if (port.name === "safeguard-keepalive") {
+  if (port.name === "chatqueue-keepalive") {
     port.onDisconnect.addListener(() => {});
   }
 });
@@ -672,8 +672,8 @@ chrome.commands.onCommand.addListener(command => {
         chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_PANEL" },
           () => chrome.runtime.lastError);
       }
-      if (command === "toggle-safeguard") {
-        chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_SAFEGUARD" },
+      if (command === "toggle-chatqueue") {
+        chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_CHATQUEUE" },
           () => chrome.runtime.lastError);
       }
     } catch {}
@@ -743,7 +743,7 @@ function forceSend(chatUrl) {
               chrome.notifications.create({
                 type: "basic",
                 iconUrl: "icons/icon48.png",
-                title: "Claude Safeguard ✓",
+                title: "ChatQueue AI ✓",
                 message: "Your prompt was force sent!"
               });
               if (sound !== "none") {

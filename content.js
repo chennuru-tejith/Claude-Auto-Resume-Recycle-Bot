@@ -1,4 +1,4 @@
-// Claude Safeguard — Content Script v4
+// ChatQueue AI — Content Script v4
 // Complete rewrite: correct header injection, reliable limit detection, task overview
 
 let btnCheckInterval = null;
@@ -115,7 +115,7 @@ try {
       sendResponse({ text: getAIComposerText() });
       return;
     }
-    if (msg.type === "TOGGLE_SAFEGUARD") {
+    if (msg.type === "TOGGLE_CHATQUEUE") {
       const url = location.href;
       safeGet("queues", d => {
         const queues = d?.queues || {};
@@ -128,7 +128,7 @@ try {
           }
         }
         if (q?.active) {
-          safeSend({ type: "STOP_RESUME", chatUrl: q.chatUrl }, () => showToast("⏹ Claude Safeguard stopped"));
+          safeSend({ type: "STOP_RESUME", chatUrl: q.chatUrl }, () => showToast("⏹ ChatQueue AI stopped"));
         } else {
           if (!panelOpen) openPanel();
           showToast("Open panel — configure and click Start");
@@ -494,7 +494,7 @@ async function fetchClaudeUsage() {
   }
   
   try {
-    const res = await fetch(`https://claude.ai/api/organizations/${orgId}/usage`);
+    const res = await fetch(`/api/organizations/${orgId}/usage`);
     if (!res.ok) return null;
     const data = await res.json();
     
@@ -517,7 +517,7 @@ async function fetchClaudeUsage() {
     lastUsageFetchTime = now;
     return info;
   } catch (err) {
-    console.warn("Claude Safeguard usage fetch error:", err);
+    console.log("ChatQueue AI: usage fetch request info (normal if offline/unauthorized):", err);
     return null;
   }
 }
@@ -1455,7 +1455,7 @@ function exportToPdf(chat) {
       </head>
       <body>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; border-bottom: 2px solid #e5e7eb; padding-bottom:10px;">
-          <h1 style="margin:0;">🛡️ Claude Safeguard Conversation</h1>
+          <h1 style="margin:0;">⏱️ ChatQueue AI Conversation</h1>
           <button id="cl-print-btn" style="background:#d946ef; color:#fff; border:none; border-radius:6px; padding: 8px 16px; font-weight:600; cursor:pointer; font-size:13px; outline:none;">🖨 Print / Save as PDF</button>
         </div>
         <div class="meta">Title: ${escHtml(chat.title || "Untitled Chat")} | ID: ${chat.uuid} | Exported: ${new Date().toLocaleString()}</div>
@@ -1766,7 +1766,7 @@ function scrapeConversation() {
       }
     }
   } catch (err) {
-    console.warn('Claude Safeguard: scrape error', err);
+    console.log('ChatQueue AI: scrape error', err);
   }
   return messages;
 }
@@ -2568,7 +2568,7 @@ function injectBtn() {
 
   const btn = document.createElement("button");
   btn.id    = "ar-btn";
-  btn.title = "Claude Safeguard";
+  btn.title = "ChatQueue AI";
   btn.innerHTML = `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -2732,8 +2732,8 @@ function openPanel() {
           </svg>
         </div>
         <div>
-          <div class="ar-ttl">Claude Safeguard</div>
-          <div class="ar-sub">Auto-resumes and recycles conversations</div>
+          <div class="ar-ttl">ChatQueue AI</div>
+          <div class="ar-sub">Auto-resumes limit wait lists and queues prompts</div>
         </div>
       </div>
       <button class="ar-cls" id="ar-close">✕</button>
@@ -2788,7 +2788,7 @@ function openPanel() {
         </div>
       </div>
       <div class="ar-div"></div>
-      <button class="ar-btn-primary" id="ar-start">▶&nbsp; Start Claude Safeguard</button>
+      <button class="ar-btn-primary" id="ar-start">▶&nbsp; Start ChatQueue AI</button>
       <button class="ar-btn-danger"  id="ar-stop" style="display:none">■&nbsp; Stop</button>
     </div>
 
@@ -2835,7 +2835,7 @@ function openPanel() {
           <span class="ar-task-val muted" id="tk-attempts">0</span>
         </div>
       </div>
-      <button class="ar-btn-danger" id="ar-stop2" style="display:none">■&nbsp; Stop Claude Safeguard</button>
+      <button class="ar-btn-danger" id="ar-stop2" style="display:none">■&nbsp; Stop ChatQueue AI</button>
     </div>
 
     <!-- LOG TAB -->
@@ -3118,7 +3118,7 @@ function openPanel() {
 
     safeSet({ savedSettings: { chatUrl: url, prompt, resetMinutes: mins, checkInterval: interval } });
     safeSend({ type: "START_RESUME", data: { chatUrl: url, prompt, resetMinutes: mins, checkInterval: interval } }, () => {
-      showToast("✓ Claude Safeguard started!");
+      showToast("✓ ChatQueue AI started!");
       refreshStatus();
       // Switch to status tab
       p.querySelector('[data-tab="status"]').click();
@@ -3301,7 +3301,7 @@ function updateStatusTab(state) {
     checking:   "Testing if the limit has cleared...",
     sending:    "Typing and sending your resume prompt",
     done:       "Prompt was sent successfully! Check your chat.",
-    stopped:    "Claude Safeguard was stopped manually",
+    stopped:    "ChatQueue AI was stopped manually",
     failed:     "Something went wrong — check the Log tab",
   };
 
@@ -3374,7 +3374,7 @@ function updateStatusTab(state) {
     }
   }
 
-  // Session reset time (used for Claude Safeguard countdown)
+  // Session reset time (used for ChatQueue AI countdown)
   const ri = getResetInfo();
   if (tk.time) {
     if (ri) {
@@ -3416,7 +3416,7 @@ function maintainKeepAlivePort(isActive) {
   if (isActive) {
     if (!keepAlivePort && isCtxValid()) {
       try {
-        keepAlivePort = chrome.runtime.connect({ name: "safeguard-keepalive" });
+        keepAlivePort = chrome.runtime.connect({ name: "chatqueue-keepalive" });
         keepAlivePort.onDisconnect.addListener(() => {
           keepAlivePort = null;
           setTimeout(() => {

@@ -1,4 +1,4 @@
-# 🛡️ Claude Safeguard & Auto-Resume: Claude Recycle Bin & Chat Recovery Extension
+# ⏱️ ChatQueue AI: Ultimate Auto-Resume Queue & Backup Hub for AI Chatbots
 
 [![GitHub license](https://img.shields.io/github/license/chennuru-tejith/Claude-Chat-Resume-Bot?style=for-the-badge&color=7c3aed)](https://github.com/chennuru-tejith/Claude-Chat-Resume-Bot/blob/main/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/chennuru-tejith/Claude-Chat-Resume-Bot?style=for-the-badge&color=10b981)](https://github.com/chennuru-tejith/Claude-Chat-Resume-Bot/stargazers)
@@ -9,14 +9,14 @@
 
 ---
 
-## 🔍 Why You Need This Extension
+## 🔍 Why You Need ChatQueue AI
 
 ### 1. Claude Deleted Chat Recovery (The Missing Recycle Bin)
 Anthropic's Claude AI does not provide a backup, restore, or trash bin utility. If you click **Delete chat** by mistake, your conversation is **permanently lost** from their servers. 
-**Claude Safeguard** solves this by running a secure, automated background sync that caches your chat threads locally. It injects a native **Recycled Chats** section directly into Claude's sidebar so you can preview, download, or restore deleted chats with a single click.
+**ChatQueue AI** solves this by running a secure, automated background sync that caches your chat threads locally. It injects a native **Recycled Chats** section directly into Claude's sidebar so you can preview, download, or restore deleted chats with a single click.
 
 ### 2. Auto-Resume Queue (Bypass Rate Limits)
-Tired of hitting "You've reached your usage limit" and waiting around? Claude Safeguard monitors rate limit warnings on Claude, ChatGPT, Gemini, and DeepSeek, reads the reset timers (e.g. *try again after 3:15 PM* or *in 45 minutes*), counts down, and **automatically sends your prompt** the second your limit is cleared.
+Tired of hitting "You've reached your usage limit" and waiting around? ChatQueue AI monitors rate limit warnings on Claude, ChatGPT, Gemini, and DeepSeek, reads the reset timers (e.g. *try again after 3:15 PM* or *in 45 minutes*), counts down, and **automatically sends your prompt** the second your limit is cleared.
 
 ---
 
@@ -42,7 +42,7 @@ Tired of hitting "You've reached your usage limit" and waiting around? Claude Sa
 
 ### Step 1: Download the Extension
 Download the latest release zip package from the repository:
-- **[Download Claude Safeguard ZIP Package](claude-safeguard-autoresume.zip)**
+- **[Download ChatQueue AI ZIP Package](chatqueue-ai.zip)**
 
 ### Step 2: Install in Google Chrome / Brave / Edge
 1.  Extract the downloaded ZIP package to a folder on your computer.

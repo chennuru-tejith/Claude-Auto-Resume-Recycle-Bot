@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Claude Safeguard & AutoResume",
+  "name": "ChatQueue AI",
   "version": "1.0.0",
-  "description": "Auto-resumes chat limits and recycles deleted conversations in Claude. Supports Claude, ChatGPT, Gemini, and DeepSeek.",
+  "description": "Auto-resumes chat limit lists and queues prompts. Supports Claude, ChatGPT, Gemini, and DeepSeek.",
   "permissions": [
     "storage",
     "alarms",
@@ -48,11 +48,11 @@
   "commands": {
     "toggle-panel": {
       "suggested_key": { "default": "Alt+Shift+R" },
-      "description": "Toggle Claude Safeguard panel"
+      "description": "Toggle ChatQueue AI panel"
     },
-    "toggle-safeguard": {
+    "toggle-chatqueue": {
       "suggested_key": { "default": "Alt+Shift+S" },
-      "description": "Start or stop Claude Safeguard"
+      "description": "Start or stop ChatQueue AI"
     }
   }
 }

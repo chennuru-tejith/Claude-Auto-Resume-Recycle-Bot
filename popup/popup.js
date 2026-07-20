@@ -1340,7 +1340,7 @@ function playLocalSoundPreview(soundType, voiceName) {
       setTimeout(() => ctx.close(), 1000);
     } else if (soundType === "tts") {
       if (typeof speechSynthesis !== "undefined") {
-        const utterance = new SpeechSynthesisUtterance("Claude Safeguard is ready!");
+        const utterance = new SpeechSynthesisUtterance("ChatQueue AI is ready!");
         if (voiceName) {
           const voice = speechSynthesis.getVoices().find(v => v.name === voiceName);
           if (voice) utterance.voice = voice;
