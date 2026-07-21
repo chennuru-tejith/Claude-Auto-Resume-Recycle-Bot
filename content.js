@@ -3726,42 +3726,11 @@ function handleUrlChange(url) {
   });
 }
 
-function injectFetchInterceptor() {
-  try {
-    const ex = document.getElementById('ar-fetch-interceptor');
-    if (ex) return; // Prevent double injection
-    
-    const script = document.createElement('script');
-    script.id = 'ar-fetch-interceptor';
-    script.textContent = `
-      (function() {
-        const originalFetch = window.fetch;
-        window.fetch = async function(...args) {
-          const url = args[0];
-          const options = args[1];
-          if (typeof url === 'string' && url.includes('/api/organizations/') && url.includes('/chats/') && options && options.method === 'DELETE') {
-            const match = url.match(/\\/chats\\/([0-9a-fA-F-]+)/);
-            if (match) {
-              const chatId = match[1];
-              window.postMessage({ type: 'CLAUDE_CHAT_DELETING', chatId }, '*');
-              // Delay the actual delete request by 500ms to allow background pre-fetch to save history
-              await new Promise(r => setTimeout(r, 500));
-            }
-          }
-          return originalFetch.apply(this, args);
-        };
-      })();
-    `;
-    (document.head || document.documentElement).appendChild(script);
-  } catch (err) {
-    console.warn("Failed to inject fetch interceptor:", err);
-  }
-}
+// Fetch interceptor is loaded natively via inject.js as a MAIN world content script.
 
 // ── Boot ──────────────────────────────────────────────────────────────
 function boot() {
   injectStyles();
-  injectFetchInterceptor();
   setupRecycleBinListeners();
 
   // Start periodic check for button presence to handle SPA navigations reliably
