@@ -1003,12 +1003,13 @@ function renderTemplates() {
 
 // ── Render settings panel ─────────────────────────────────────────────
 function renderSettings() {
-  chrome.storage.local.get(["soundPref", "ttsVoice", "theme", "fabEnabled", "autoCaptureEnabled", "autoCopyOnLimit", "promptHistory"], d => {
+  chrome.storage.local.get(["soundPref", "ttsVoice", "theme", "fabEnabled", "autoCaptureEnabled", "autoCopyOnLimit", "autoScrollEnabled", "promptHistory"], d => {
     $("selSound").value = d.soundPref || "chime";
     $("selTheme").value = d.theme || "default";
     $("chkFab").checked = d.fabEnabled !== false;
     $("chkAutoCapture").checked = d.autoCaptureEnabled !== false;
     $("chkAutoCopyOnLimit").checked = d.autoCopyOnLimit === true;
+    $("chkAutoScroll").checked = d.autoScrollEnabled === true;
 
     // Show/hide TTS voice row
     const rowTts = $("rowTtsVoice");
@@ -1240,6 +1241,11 @@ $("chkAutoCopyOnLimit").addEventListener("change", () => {
   toast("✓ Auto-copy on Limit " + ($("chkAutoCopyOnLimit").checked ? "enabled" : "disabled"));
 });
 
+$("chkAutoScroll").addEventListener("change", () => {
+  updateSetting("autoScrollEnabled", $("chkAutoScroll").checked);
+  toast("✓ Auto-scroll stream " + ($("chkAutoScroll").checked ? "enabled" : "disabled"));
+});
+
 $("btnClearHistory").addEventListener("click", () => {
   chrome.storage.local.set({
     promptHistory: [],
@@ -1248,12 +1254,14 @@ $("btnClearHistory").addEventListener("click", () => {
     theme: "default",
     fabEnabled: true,
     autoCaptureEnabled: true,
-    autoCopyOnLimit: false
+    autoCopyOnLimit: false,
+    autoScrollEnabled: false
   }, () => {
     chrome.runtime.sendMessage({ type: "SET_SOUND_PREF", data: { soundPref: "chime" } });
     updateSetting("fabEnabled", true);
     updateSetting("autoCaptureEnabled", true);
     updateSetting("autoCopyOnLimit", false);
+    updateSetting("autoScrollEnabled", false);
     applyTheme("default");
     $("selSound").value = "chime";
     $("selTheme").value = "default";

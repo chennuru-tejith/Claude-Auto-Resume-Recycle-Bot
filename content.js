@@ -8,6 +8,7 @@ let fabEnabled = true;
 let autoCaptureEnabled = true;
 let autoCopyOnLimit = false;
 let limitCopyTriggered = false;
+let autoScrollEnabled = false;
 
 function cleanUrlForComparison(urlStr) {
   try {
@@ -20,7 +21,7 @@ function cleanUrlForComparison(urlStr) {
 }
 
 try {
-  chrome.storage.local.get(["fabEnabled", "autoCaptureEnabled", "autoCopyOnLimit"], d => {
+  chrome.storage.local.get(["fabEnabled", "autoCaptureEnabled", "autoCopyOnLimit", "autoScrollEnabled"], d => {
     if (d) {
       if (d.fabEnabled === false) {
         fabEnabled = false;
@@ -31,6 +32,9 @@ try {
       }
       if (d.autoCopyOnLimit === true) {
         autoCopyOnLimit = true;
+      }
+      if (d.autoScrollEnabled === true) {
+        autoScrollEnabled = true;
       }
     }
   });
@@ -159,6 +163,9 @@ try {
       }
       if (msg.key === "autoCopyOnLimit") {
         autoCopyOnLimit = msg.val;
+      }
+      if (msg.key === "autoScrollEnabled") {
+        autoScrollEnabled = msg.val;
       }
       return;
     }
@@ -1058,7 +1065,7 @@ async function fetchClaudeChatFromApi(chatId) {
       lastUpdated: Date.now()
     };
   } catch (err) {
-    console.warn("Failed to fetch chat details from Claude API:", err);
+    console.log("ChatQueue AI: Failed to fetch chat details from Claude API:", err);
     return null;
   }
 }
@@ -3649,6 +3656,18 @@ const mutObs = new MutationObserver(() => {
     updateLocalChatCache();
     // Update native usage bar
     updateUsageBarOnPage();
+
+    // Auto-scroll chat window if streaming & enabled
+    if (autoScrollEnabled && isAiResponding()) {
+      try {
+        const mainEl = document.querySelector('div[class*="overflow-y-auto"], main, div[role="main"]');
+        if (mainEl) {
+          mainEl.scrollTop = mainEl.scrollHeight;
+        } else {
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+      } catch {}
+    }
   }, 900);
 });
 try { mutObs.observe(document.body, { childList: true, subtree: true }); } catch {}
