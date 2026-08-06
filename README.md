@@ -1,8 +1,8 @@
 # ⏱️ ChatQueue AI: Ultimate Auto-Resume Queue & Backup Hub for AI Chatbots
 
-[![GitHub license](https://img.shields.io/github/license/chennuru-tejith/Claude-Chat-Resume-Bot?style=for-the-badge&color=7c3aed)](https://github.com/chennuru-tejith/Claude-Chat-Resume-Bot/blob/main/LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/chennuru-tejith/Claude-Chat-Resume-Bot?style=for-the-badge&color=10b981)](https://github.com/chennuru-tejith/Claude-Chat-Resume-Bot/stargazers)
-[![GitHub issues](https://img.shields.io/github/issues/chennuru-tejith/Claude-Chat-Resume-Bot?style=for-the-badge&color=3b82f6)](https://github.com/chennuru-tejith/Claude-Chat-Resume-Bot/issues)
+[![GitHub license](https://img.shields.io/github/license/chennuru-tejith/Claude-Auto-Resume-Recycle-Bot?style=for-the-badge&color=7c3aed)](https://github.com/chennuru-tejith/Claude-Auto-Resume-Recycle-Bot/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/chennuru-tejith/Claude-Auto-Resume-Recycle-Bot?style=for-the-badge&color=10b981)](https://github.com/chennuru-tejith/Claude-Auto-Resume-Recycle-Bot/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/chennuru-tejith/Claude-Auto-Resume-Recycle-Bot?style=for-the-badge&color=3b82f6)](https://github.com/chennuru-tejith/Claude-Auto-Resume-Recycle-Bot/issues)
 [![Platform](https://img.shields.io/badge/Platform-Chrome%20%7C%20Edge%20%7C%20Brave%20%7C%20Opera-violet?style=for-the-badge)](#)
 
 > **Recover deleted Claude chats, auto-backup conversations, and auto-submit prompts when rate limits reset! The ultimate local-first browser extension providing a native Recycle Bin, Chat History Backup, and Auto-Resume Queue for Claude, ChatGPT, Gemini, and DeepSeek.**
